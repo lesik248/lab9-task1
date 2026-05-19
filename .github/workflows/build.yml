@@ -159,16 +159,15 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: Package .app for Appetize
+      - name: Stage .app at workspace root
         run: |
           APP_DIR="iosApp/build/Build/Products/Debug-iphonesimulator/iosApp.app"
           if [ ! -d "$APP_DIR" ]; then
             echo "App bundle not found at $APP_DIR"; exit 1
           fi
-          cd "$(dirname "$APP_DIR")"
-          zip -r "$GITHUB_WORKSPACE/iosApp.app.zip" "$(basename "$APP_DIR")"
+          cp -R "$APP_DIR" ./iosApp.app
 
       - uses: actions/upload-artifact@v4
         with:
           name: weather-ios-app
-          path: iosApp.app.zip
+          path: iosApp.app
