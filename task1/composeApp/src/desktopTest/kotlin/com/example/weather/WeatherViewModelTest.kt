@@ -50,13 +50,15 @@ class WeatherViewModelTest {
     )
 
     @Test
-    fun search_updates_state_with_weather() = runTest {
+    fun search_updates_state_with_weather() = runTest(dispatcher) {
         val vm = WeatherViewModel(
             WeatherRepository(api(), InMemoryWeatherCache()),
-            ioDispatcher = dispatcher
+            ioDispatcher = dispatcher,
+            externalScope = this
         )
         vm.updateQuery("Minsk")
         vm.search()
+        advanceUntilIdle()
         val state = vm.state.value
         assertNotNull(state.current)
         assertEquals("Minsk", state.current?.city)
@@ -64,10 +66,11 @@ class WeatherViewModelTest {
     }
 
     @Test
-    fun blank_query_produces_error() = runTest {
+    fun blank_query_produces_error() = runTest(dispatcher) {
         val vm = WeatherViewModel(
             WeatherRepository(api(), InMemoryWeatherCache()),
-            ioDispatcher = dispatcher
+            ioDispatcher = dispatcher,
+            externalScope = this
         )
         vm.updateQuery("   ")
         vm.search()
@@ -76,26 +79,30 @@ class WeatherViewModelTest {
     }
 
     @Test
-    fun selectCity_switches_current_to_cached() = runTest {
+    fun selectCity_switches_current_to_cached() = runTest(dispatcher) {
         val cache = InMemoryWeatherCache()
         val vm = WeatherViewModel(
             WeatherRepository(api(), cache),
-            ioDispatcher = dispatcher
+            ioDispatcher = dispatcher,
+            externalScope = this
         )
         vm.updateQuery("Minsk")
         vm.search()
+        advanceUntilIdle()
         vm.updateQuery("Brest")
         // Second call updates the engine result name, but model uses 'Minsk' anyway —
         // we just need it to add a second city to savedCities.
         vm.search()
+        advanceUntilIdle()
         assertTrue(vm.state.value.savedCities.isNotEmpty())
     }
 
     @Test
-    fun clearError_resets_error_field() = runTest {
+    fun clearError_resets_error_field() = runTest(dispatcher) {
         val vm = WeatherViewModel(
             WeatherRepository(api(), InMemoryWeatherCache()),
-            ioDispatcher = dispatcher
+            ioDispatcher = dispatcher,
+            externalScope = this
         )
         vm.updateQuery("")
         vm.search()

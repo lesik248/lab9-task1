@@ -42,7 +42,7 @@ class WeatherIntegrationTest {
     """.trimIndent()
 
     @Test
-    fun viewmodel_repository_api_pipeline_succeeds() = runTest {
+    fun viewmodel_repository_api_pipeline_succeeds() = runTest(dispatcher) {
         val engine = MockEngine { request ->
             val city = request.url.parameters["q"] ?: "Unknown"
             respond(
@@ -54,11 +54,13 @@ class WeatherIntegrationTest {
         val cache = InMemoryWeatherCache()
         val vm = WeatherViewModel(
             WeatherRepository(OpenWeatherMapApi(engine, apiKey = "K"), cache),
-            ioDispatcher = dispatcher
+            ioDispatcher = dispatcher,
+            externalScope = this
         )
 
         vm.updateQuery("Minsk")
         vm.search()
+        advanceUntilIdle()
 
         val state = vm.state.value
         assertNotNull(state.current)
@@ -69,7 +71,7 @@ class WeatherIntegrationTest {
     }
 
     @Test
-    fun two_searches_populate_saved_cities() = runTest {
+    fun two_searches_populate_saved_cities() = runTest(dispatcher) {
         val engine = MockEngine { request ->
             val city = request.url.parameters["q"] ?: "Unknown"
             respond(
@@ -81,18 +83,19 @@ class WeatherIntegrationTest {
         val cache = InMemoryWeatherCache()
         val vm = WeatherViewModel(
             WeatherRepository(OpenWeatherMapApi(engine, apiKey = "K"), cache),
-            ioDispatcher = dispatcher
+            ioDispatcher = dispatcher,
+            externalScope = this
         )
 
-        vm.updateQuery("Minsk"); vm.search()
-        vm.updateQuery("Brest"); vm.search()
+        vm.updateQuery("Minsk"); vm.search(); advanceUntilIdle()
+        vm.updateQuery("Brest"); vm.search(); advanceUntilIdle()
 
         val cities = vm.state.value.savedCities.map { it.city }.toSet()
         assertEquals(setOf("Minsk", "Brest"), cities)
     }
 
     @Test
-    fun offline_fallback_uses_cache_after_first_success() = runTest {
+    fun offline_fallback_uses_cache_after_first_success() = runTest(dispatcher) {
         var attempts = 0
         val engine = MockEngine { request ->
             attempts++
@@ -110,11 +113,12 @@ class WeatherIntegrationTest {
         val cache = InMemoryWeatherCache()
         val vm = WeatherViewModel(
             WeatherRepository(OpenWeatherMapApi(engine, apiKey = "K"), cache),
-            ioDispatcher = dispatcher
+            ioDispatcher = dispatcher,
+            externalScope = this
         )
 
-        vm.updateQuery("Minsk"); vm.search()
-        vm.updateQuery("Minsk"); vm.search()
+        vm.updateQuery("Minsk"); vm.search(); advanceUntilIdle()
+        vm.updateQuery("Minsk"); vm.search(); advanceUntilIdle()
 
         val state = vm.state.value
         assertNotNull(state.current)
@@ -123,7 +127,7 @@ class WeatherIntegrationTest {
     }
 
     @Test
-    fun api_key_is_sent_as_appid_parameter() = runTest {
+    fun api_key_is_sent_as_appid_parameter() = runTest(dispatcher) {
         val seen = mutableListOf<String>()
         val engine = MockEngine { request ->
             seen += request.url.parameters["appid"].orEmpty()

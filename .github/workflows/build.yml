@@ -9,6 +9,15 @@ on:
 env:
   OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   android:
     name: Android (APK)
@@ -110,6 +119,24 @@ jobs:
         with:
           name: weather-web
           path: task1/composeApp/build/dist/wasmJs/productionExecutable/
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: task1/composeApp/build/dist/wasmJs/productionExecutable/
+
+  deploy-pages:
+    name: Deploy Web to GitHub Pages
+    needs: web
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
 
   ios:
     name: iOS Framework

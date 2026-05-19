@@ -6,6 +6,7 @@ import com.example.weather.data.WeatherRepository
 import com.example.weather.data.WeatherResult
 import com.example.weather.data.model.Weather
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,11 +27,14 @@ data class WeatherUiState(
 
 class WeatherViewModel(
     private val repo: WeatherRepository,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.Default
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val externalScope: CoroutineScope? = null
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(WeatherUiState())
     val state: StateFlow<WeatherUiState> = _state.asStateFlow()
+
+    private val scope: CoroutineScope get() = externalScope ?: viewModelScope
 
     init {
         val cached = repo.cachedCities()
@@ -63,7 +67,7 @@ class WeatherViewModel(
             return
         }
         _state.update { it.copy(isLoading = true, error = null, offlineNotice = false) }
-        viewModelScope.launch {
+        scope.launch {
             val result = withContext(ioDispatcher) { repo.getWeather(target) }
             when (result) {
                 is WeatherResult.Success -> {

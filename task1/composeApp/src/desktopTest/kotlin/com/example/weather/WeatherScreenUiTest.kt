@@ -18,7 +18,9 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlin.test.Test
 
 @OptIn(ExperimentalTestApi::class)
@@ -49,7 +51,8 @@ class WeatherScreenUiTest {
     fun shows_title_and_search_controls() = runComposeUiTest {
         val vm = WeatherViewModel(
             WeatherRepository(api(), InMemoryWeatherCache()),
-            Dispatchers.Unconfined
+            Dispatchers.Unconfined,
+            externalScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         )
         setContent { WeatherScreen(vm) }
         onNodeWithText("Погода").assertIsDisplayed()
@@ -60,7 +63,8 @@ class WeatherScreenUiTest {
     fun typing_into_field_and_clicking_button_renders_card() = runComposeUiTest {
         val vm = WeatherViewModel(
             WeatherRepository(api(), InMemoryWeatherCache()),
-            Dispatchers.Unconfined
+            Dispatchers.Unconfined,
+            externalScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         )
         setContent { WeatherScreen(vm) }
         onNodeWithText("Введите город").performTextInput("Minsk")
@@ -73,7 +77,8 @@ class WeatherScreenUiTest {
     fun empty_query_shows_error() = runComposeUiTest {
         val vm = WeatherViewModel(
             WeatherRepository(api(), InMemoryWeatherCache()),
-            Dispatchers.Unconfined
+            Dispatchers.Unconfined,
+            externalScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         )
         setContent { WeatherScreen(vm) }
         onNodeWithText("Найти").performClick()
@@ -85,7 +90,8 @@ class WeatherScreenUiTest {
     fun renders_temperature_with_degree_symbol() = runComposeUiTest {
         val vm = WeatherViewModel(
             WeatherRepository(api(), InMemoryWeatherCache()),
-            Dispatchers.Unconfined
+            Dispatchers.Unconfined,
+            externalScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         )
         setContent { WeatherScreen(vm) }
         onNodeWithText("Введите город").performTextInput("Minsk")
